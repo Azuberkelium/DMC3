@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Darts Merge Creator 3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            user-select: none;
+        }
+        .grid-cell {
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .grid-cell:active {
+            transform: scale(0.95);
+        }
+        .tool-btn {
+            transition: all 0.2s;
+        }
+        .tool-btn.active {
+            ring: 4px;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+            z-index: 10;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans relative">
+
+    <!-- Global Toast Notification -->
+    <div id="toast-message" class="fixed top-6 left-1/2 transform -translate-x-1/2 bg-slate-800 border-2 border-slate-600 text-white px-6 py-3 rounded-xl shadow-2xl z-[500] transition-all duration-300 opacity-0 translate-y-[-20px] pointer-events-none font-bold text-center flex items-center gap-2">
+        <i class="ph ph-info text-xl text-cyan-400"></i>
+        <span id="toast-text"></span>
+    </div>
+
+    <!-- Play Mode Timer -->
+    <div id="play-timer-container" class="fixed top-24 right-4 sm:top-24 sm:right-6 bg-slate-900 border-2 border-slate-700 rounded-2xl px-4 py-2 z-40 shadow-xl transition-opacity duration-300 hidden flex-row items-center gap-3">
+        <i class="ph ph-clock-countdown text-2xl text-amber-500 animate-pulse"></i>
+        <div class="flex flex-col">
+            <span class="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest leading-none mb-1">Time Left</span>
+            <span id="play-timer-text" class="text-xl sm:text-2xl font-bold font-mono text-white leading-none">10:00</span>
+        </div>
+    </div>
+
+    <!-- Mr. Beast Modal -->
+    <div id="mr-beast-modal" class="fixed inset-0 bg-blue-950/90 z-[450] hidden flex-col items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-slate-900 border-4 border-blue-500 p-8 rounded-3xl shadow-[0_0_50px_rgba(59,130,246,0.5)] flex flex-col items-center max-w-md w-full text-center relative overflow-hidden">
+            <i class="ph ph-currency-circle-dollar text-7xl text-blue-500 mb-4 animate-bounce"></i>
+            <h3 class="text-white text-3xl sm:text-4xl font-extrabold mb-8 uppercase tracking-wider leading-tight">YOU HAVE BEEN ELIMINATED</h3>
+            <button onclick="closeMrBeast()" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xl py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95">OK</button>
+        </div>
+    </div>
+
+    <!-- Dark Room Modal -->
+    <div id="dark-room-modal" class="fixed inset-0 bg-black z-[400] hidden flex-col items-center justify-center p-4 transition-opacity duration-300">
+        <div class="flex flex-col items-center text-center max-w-3xl w-full">
+            <i class="ph ph-lightbulb-filament text-7xl text-slate-700 mb-6 opacity-20"></i>
+            <h2 class="text-3xl sm:text-5xl text-white font-extrabold tracking-widest uppercase leading-tight mb-8 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                YOU AWAKE, TO FIND YOURSELF IN A DARKROOM!
+            </h2>
+            <p class="text-slate-400 text-xl sm:text-2xl mb-8 font-bold tracking-widest">DO YOU:</p>
+            <div class="flex flex-col gap-4 w-full sm:w-96">
+                <button onclick="closeDarkRoom()" class="bg-slate-900 hover:bg-slate-800 text-white text-lg sm:text-xl py-4 px-6 rounded-xl font-bold transition-all border border-slate-700 text-left pl-8 active:scale-95">A) keep playing</button>
+                <button onclick="closeDarkRoom()" class="bg-slate-900 hover:bg-slate-800 text-white text-lg sm:text-xl py-4 px-6 rounded-xl font-bold transition-all border border-slate-700 text-left pl-8 active:scale-95">B) resume</button>
+                <button onclick="closeDarkRoom()" class="bg-slate-900 hover:bg-slate-800 text-white text-lg sm:text-xl py-4 px-6 rounded-xl font-bold transition-all border border-slate-700 text-left pl-8 active:scale-95">C) play dartsmerge</button>
+                <button onclick="closeDarkRoom()" class="bg-slate-900 hover:bg-slate-800 text-white text-lg sm:text-xl py-4 px-6 rounded-xl font-bold transition-all border border-slate-700 text-left pl-8 active:scale-95">D) all of the above</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Curse Modal -->
+    <div id="curse-modal" class="fixed inset-0 bg-red-950/90 z-[250] hidden flex-col items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-500">
+        <div class="flex flex-col items-center animate-bounce">
+            <i class="ph ph-ghost text-8xl text-red-500 drop-shadow-[0_0_20px_rgba(220,38,38,0.8)] mb-6"></i>
+            <h2 class="text-5xl sm:text-7xl text-white font-extrabold tracking-widest uppercase drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">YOU ARE CURSED!</h2>
+            <p class="text-red-400 text-xl mt-4 font-bold tracking-widest">Very nice, very evil...</p>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="fixed inset-0 bg-slate-950/90 z-[250] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-md w-full text-center relative overflow-hidden">
+            <div class="absolute inset-0 bg-red-500/10 pointer-events-none"></div>
+            <i class="ph ph-skull text-6xl text-rose-500 mb-4 drop-shadow-[0_0_15px_rgba(244,63,94,0.5)]"></i>
+            <h3 class="text-white text-3xl font-extrabold mb-2 z-10">Darts Merge is Over!</h3>
+            <p class="text-slate-400 text-lg mb-8 z-10">See you on another darts merge day.</p>
+            <button onclick="closeGameOver()" class="w-full bg-rose-600 hover:bg-rose-500 text-white text-xl py-3 rounded-xl font-bold transition-all shadow-lg shadow-rose-600/20 z-10">Close</button>
+        </div>
+    </div>
+
+    <!-- Ad Break Modal -->
+    <div id="ad-modal" class="fixed inset-0 bg-slate-950/95 z-[250] hidden flex-col items-center justify-center p-4">
+        <div class="flex flex-col items-center">
+            <h2 class="text-4xl text-white font-bold mb-6 tracking-wide uppercase text-slate-300">Ad Break</h2>
+            <div class="relative w-48 h-48 flex items-center justify-center rounded-full border-8 border-slate-800 shadow-[inset_0_0_30px_rgba(0,0,0,0.5)] bg-slate-900 mb-6">
+                <span id="ad-timer" class="text-6xl text-amber-500 font-extrabold drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">30</span>
+            </div>
+            <p class="text-slate-400 font-medium text-lg animate-pulse">Please wait...</p>
+        </div>
+    </div>
+
+    <!-- Image Export Modal -->
+    <div id="image-modal" class="fixed inset-0 bg-slate-950/90 z-[100] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl shadow-2xl flex flex-col items-center max-w-4xl w-full">
+            <h3 class="text-white text-2xl font-bold mb-2">Your Grid is Ready!</h3>
+            <p class="text-amber-400 mb-6 text-center font-medium bg-amber-400/10 px-4 py-2 rounded-lg">
+                <i class="ph ph-download-simple"></i> Right-click (or long-press) the image below and select "Save Image As..."
+            </p>
+            <div class="overflow-auto max-h-[60vh] w-full flex justify-center rounded-xl border-4 border-slate-700 bg-slate-800 p-2 shadow-inner">
+                <img id="exported-image" class="max-w-full h-auto object-contain" alt="Exported Level">
+            </div>
+            <button onclick="closeImageModal()" class="mt-6 bg-rose-600 hover:bg-rose-500 px-8 py-2.5 rounded-xl font-bold text-white transition-colors shadow-lg shadow-rose-600/20">Close</button>
+        </div>
+    </div>
+
+    <!-- Lucky Wheel Modal -->
+    <div id="wheel-modal" class="fixed inset-0 bg-slate-950/90 z-[150] hidden flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-900 border border-slate-700 p-8 rounded-3xl shadow-2xl flex flex-col items-center max-w-sm w-full relative">
+            <h3 class="text-white text-3xl font-extrabold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-500 tracking-wide">
+                Lucky Wheel
+            </h3>
+
+            <div class="relative w-64 h-64 sm:w-72 sm:h-72 mb-8">
+                <div class="absolute top-[-15px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-t-[25px] border-t-rose-500 z-20 drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]"></div>
+                <div id="wheel-spinner" class="w-full h-full rounded-full shadow-[0_0_25px_rgba(0,0,0,0.6)] border-[6px] border-slate-800 relative overflow-hidden transition-transform duration-[4000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"></div>
+            </div>
+
+            <button onclick="spinWheel()" id="spin-btn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xl py-4 rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-95 mb-4">
+                SPIN!
+            </button>
+            <button onclick="closeWheelModal()" id="close-wheel-btn" class="text-slate-400 hover:text-white font-medium transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-700 py-4 px-6 shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4 z-10">
+        <div>
+            <h1 class="text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
+                Darts Merge Creator 3
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">Design your ultimate merge board</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 bg-slate-800 p-3 rounded-xl border border-slate-700">
+            <div class="flex items-center gap-2">
+                <label for="cols" class="text-sm text-slate-300 font-medium">Cols:</label>
+                <input type="number" id="cols" min="4" max="15" value="6" oninput="handleDimensionChange('cols')" class="w-16 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white focus:outline-none focus:border-cyan-500">
+            </div>
+            
+            <button onclick="toggleRatioLock()" id="ratio-lock-btn" class="text-slate-400 hover:text-white transition-colors p-1" title="Lock A4 Ratio">
+                <i id="ratio-lock-icon" class="ph ph-lock-key-open text-xl"></i>
+            </button>
+
+            <div class="flex items-center gap-2">
+                <label for="rows" class="text-sm text-slate-300 font-medium">Rows:</label>
+                <input type="number" id="rows" min="4" max="22" value="8" oninput="handleDimensionChange('rows')" class="w-16 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white focus:outline-none focus:border-cyan-500">
+            </div>
+            
+            <button onclick="generateGrid()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+                <i class="ph ph-arrows-clockwise text-lg"></i> Rebuild
+            </button>
+            <button onclick="clearGrid()" class="bg-red-600 hover:bg-red-500 text-white px-4 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-red-500/20">
+                <i class="ph ph-trash text-lg"></i> Clear
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- Grid Workspace Area -->
+        <div class="flex-1 p-6 flex flex-col items-center justify-start overflow-auto bg-slate-950/50">
+            
+            <div class="flex flex-row items-start justify-center w-full gap-4 max-w-5xl">
+                
+                <!-- Play Mode Inventory Bank -->
+                <div id="play-bank" class="hidden flex-col bg-slate-800 p-3 rounded-2xl shadow-xl border border-slate-700 w-24 sm:w-28 flex-shrink-0 transition-opacity duration-300">
+                    <h3 class="text-[0.6rem] sm:text-[0.7rem] font-bold text-slate-400 uppercase tracking-widest text-center mb-3 border-b border-slate-700 pb-2">Item Bank</h3>
+                    <div id="bank-slots" class="flex flex-col gap-2 min-h-[250px] items-center">
+                        <p class="text-[0.65rem] sm:text-xs text-slate-500 text-center italic mt-4 px-2">Spin wheel<br>to earn items</p>
+                    </div>
+                </div>
+
+                <div id="capture-area" class="bg-slate-800 p-4 rounded-2xl shadow-2xl border border-slate-700 max-w-fit">
+                    <div id="grid-container" class="grid gap-1.5 mx-auto">
+                        <!-- Grid cells will be injected here via JS -->
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="mt-12 flex flex-col items-center w-full max-w-xl">
+                <!-- Entrance Song Setup -->
+                <h3 class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-3">Entrance Song Setup</h3>
+                <div class="flex flex-col sm:flex-row w-full gap-3 mb-6 bg-slate-800 p-4 rounded-xl border border-slate-700 items-center shadow-lg">
+                    <input type="text" id="audio-url" placeholder="Paste Audio Link (.mp3, .wav)" class="flex-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <span class="text-xs text-slate-500 font-bold uppercase px-2">OR</span>
+                        <input type="file" id="audio-upload" accept="audio/*, .mp3, .wav, audio/mpeg" class="w-48 text-sm text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-500 cursor-pointer">
+                    </div>
+                    <button onclick="submitAudio()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-500 text-white px-5 py-2 rounded-lg font-bold transition-colors shadow-lg shadow-amber-600/20 whitespace-nowrap flex items-center justify-center gap-2">
+                        <i class="ph ph-check-circle text-lg"></i> Submit
+                    </button>
+                </div>
+
+                <!-- Export Options -->
+                <h3 class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-3">Share Level</h3>
+                <div class="flex flex-wrap justify-center gap-3">
+                    <button onclick="exportImage()" class="bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+                        <i class="ph ph-image text-xl"></i> Save Photo
+                    </button>
+                    <button onclick="copyShareLink()" class="bg-teal-600 hover:bg-teal-500 px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2 shadow-lg shadow-teal-600/20">
+                        <i class="ph ph-link text-xl"></i> Copy Share Link
+                    </button>
+                </div>
+                <textarea id="fallback-box" class="mt-4 w-full h-24 bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs font-mono text-slate-400 hidden" readonly></textarea>
+            </div>
+        </div>
+
+        <!-- Palettes Area -->
+        <div class="w-full lg:w-96 bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-700 flex flex-col h-full lg:h-auto overflow-y-auto">
+            
+            <!-- Mode Toggle -->
+            <div class="p-4 border-b border-slate-700 flex gap-2 bg-slate-800">
+                <button onclick="setMode('build')" id="mode-build" class="flex-1 bg-cyan-600 text-white py-2 rounded-lg font-bold shadow-[inset_0_0_10px_rgba(255,255,255,0.2)] transition-colors">Build Mode</button>
+                <button onclick="setMode('play')" id="mode-play" class="flex-1 bg-slate-700 text-slate-400 py-2 rounded-lg font-bold hover:bg-slate-600 transition-colors">Play Mode</button>
+            </div>
+
+            <!-- Tools -->
+            <div id="tools-section" class="p-4 border-b border-slate-700 bg-slate-800/50 flex gap-2">
+                <button onclick="selectTool('move', null)" id="tool-move" class="tool-btn flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1">
+                    <i class="ph ph-hand-grabbing text-2xl"></i> <span class="text-[0.65rem] uppercase tracking-wide">Move Tool</span>
+                </button>
+                <button onclick="selectTool('eraser', null)" id="tool-eraser" class="tool-btn flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white py-3 rounded-xl font-bold flex flex-col items-center justify-center gap-1">
+                    <i class="ph ph-eraser text-2xl"></i> <span class="text-[0.65rem] uppercase tracking-wide">Eraser Tool</span>
+                </button>
+            </div>
+
+            <!-- Core Elements -->
+            <div class="p-4 border-b border-slate-700">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Core Elements</h2>
+                <div class="grid grid-cols-4 gap-2" id="palette-core"></div>
+            </div>
+
+            <!-- Numbers Palette -->
+            <div class="p-4 border-b border-slate-700">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Number Tiles</h2>
+                <div class="grid grid-cols-4 gap-2" id="palette-numbers"></div>
+            </div>
+
+            <!-- Primary Life Lines -->
+            <div class="p-4 border-b border-slate-700">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Primary Life Lines</h2>
+                <div class="grid grid-cols-3 gap-2" id="palette-primary"></div>
+            </div>
+
+            <!-- Secondary Life Lines -->
+            <div class="p-4 border-b border-slate-700">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Secondary Life Lines</h2>
+                <div class="grid grid-cols-2 gap-2" id="palette-secondary"></div>
+            </div>
+
+            <!-- Tertiary Life Lines -->
+            <div class="p-4 border-b border-slate-700">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Tertiary Life Lines</h2>
+                <div class="grid grid-cols-2 gap-2" id="palette-tertiary"></div>
+            </div>
+
+            <!-- Extra Life Lines -->
+            <div class="p-4 mb-8">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Extra Life Lines</h2>
+                <div class="grid grid-cols-3 gap-2" id="palette-extra"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- Configuration & Data ---
+        const numberTiles = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216];
+        
+        const coreTiles = [
+            { id: 'game_over', name: 'Game Over', icon: 'ph-skull', color: 'bg-zinc-950 text-red-500 border-red-800 shadow-[inset_0_0_15px_rgba(220,38,38,0.5)]' },
+            { id: 'play_button', name: 'Play', icon: 'ph-play-circle', color: 'bg-emerald-500 text-white border-emerald-600 shadow-[inset_0_0_15px_rgba(16,185,129,0.3)]' },
+            { id: 'entrance', name: 'Entrance', icon: 'ph-door-open', color: 'bg-amber-600 text-white border-amber-700 shadow-[inset_0_0_15px_rgba(217,119,6,0.3)]' },
+            { id: 'ad_break', name: 'Ad Break', icon: 'ph-monitor-play', color: 'bg-sky-500 text-white border-sky-600 shadow-[inset_0_0_15px_rgba(14,165,233,0.3)]' }
+        ];
+
+        const primaryTiles = [
+            { id: 'bomb', name: 'Bombo', icon: 'ph-bomb', color: 'bg-rose-500 text-white border-rose-400' },
+            { id: 'swap', name: 'Swap', icon: 'ph-arrows-left-right', color: 'bg-rose-600 text-white border-rose-500' },
+            { id: 'hammer', name: 'Hammer', icon: 'ph-hammer', color: 'bg-rose-700 text-white border-rose-600' }
+        ];
+
+        const secondaryTiles = [
+            { id: 'expire_game', name: 'Expire', icon: 'ph-hourglass-high', color: 'bg-indigo-600 text-white border-indigo-500' },
+            { id: 'remove_ads', name: 'No Ads', icon: 'ph-prohibit', color: 'bg-indigo-700 text-white border-indigo-600' }
+        ];
+
+        const tertiaryTiles = [
+            { id: 'lucky_wheel', name: 'Wheel', icon: 'ph-aperture', color: 'bg-teal-500 text-white border-teal-400' },
+            { id: 'extra_dart', name: 'Extra Dart', icon: 'ph-crosshair', color: 'bg-teal-600 text-white border-teal-500' }
+        ];
+
+        const extraTiles = [
+            { id: 'danhausen', name: 'Danhausen', icon: 'ph-ghost', color: 'bg-zinc-100 text-red-600 border-zinc-400 shadow-[inset_0_0_15px_rgba(220,38,38,0.5)]' },
+            { id: 'dark_room', name: 'Dark Room', icon: 'ph-lightbulb-filament', color: 'bg-black text-white border-slate-700 shadow-[inset_0_0_15px_rgba(255,255,255,0.2)]' },
+            { id: 'change_layout', name: 'Change Layout', icon: 'ph-layout', color: 'bg-indigo-500 text-white border-indigo-600' },
+            { id: 'print_layout', name: 'Print Layout', icon: 'ph-printer', color: 'bg-slate-500 text-white border-slate-600' },
+            { id: 'eat_layout', name: 'Eat Layout', icon: 'ph-hamburger', color: 'bg-orange-500 text-white border-orange-600' },
+            { id: 'nominate', name: 'Nominate', icon: 'ph-hand-pointing', color: 'bg-pink-500 text-white border-pink-600' },
+            { id: 'sneak_peak', name: 'Sneak Peak', icon: 'ph-eye', color: 'bg-teal-400 text-white border-teal-500' },
+            { id: 'mr_beast', name: 'Mr. Beast', icon: 'ph-currency-circle-dollar', color: 'bg-blue-500 text-white border-blue-600 shadow-[inset_0_0_15px_rgba(59,130,246,0.5)]' },
+            { id: 'shuffle', name: 'Shuffle', icon: 'ph-shuffle', color: 'bg-purple-500 text-white border-purple-600' },
+            { id: 'random', name: 'Random', icon: 'ph-question', color: 'bg-fuchsia-500 text-white border-fuchsia-600' }
+        ];
+
+        const wheelOptions = [
+            { name: 'Ad Break', category: 'core', value: 'ad_break', color: '#0ea5e9' },
+            { name: 'Bombo', category: 'primary', value: 'bomb', color: '#f43f5e' },
+            { name: 'Swap', category: 'primary', value: 'swap', color: '#e11d48' },
+            { name: '16.7M', category: 'number', value: 16777216, color: '#a21caf' },
+            { name: '8.3M', category: 'number', value: 8388608, color: '#c026d3' },
+            { name: '4.1M', category: 'number', value: 4194304, color: '#7e22ce' },
+            { name: 'Entrance', category: 'core', value: 'entrance', color: '#d97706' },
+            { name: 'No Ads', category: 'secondary', value: 'remove_ads', color: '#4338ca' },
+            { name: 'Hammer', category: 'primary', value: 'hammer', color: '#be123c' }
+        ];
+
+        const instantPlayTools = ['entrance', 'ad_break', 'remove_ads', 'lucky_wheel', 'game_over', 'danhausen', 'dark_room', 'change_layout', 'print_layout', 'eat_layout', 'nominate', 'sneak_peak', 'mr_beast', 'shuffle', 'random'];
+
+        // --- State ---
+        let gridCols = 6;
+        let gridRows = 8;
+        let gridData = [];
+        let activeTool = { category: 'number', value: 2, bankIndex: null };
+        let isDragging = false;
+        let a4RatioLocked = false;
+        let moveSelection = null; 
+        let pendingSwapFirstCell = null; 
+        let currentMode = 'build';
+        let savedBuildState = null;
+        let entranceAudio = null; 
+        
+        let adsRemoved = false;
+        let adTimerInterval = null;
+        
+        let bankInventory = []; 
+
+        let wheelSpinning = false;
+        let wheelTargetCell = null; 
+        let currentWheelRotation = 0;
+
+        let isAnimating = false;
+        
+        let playTimerInterval = null;
+        let playTimeSeconds = 600;
+
+        let isCursed = false;
+        let preCurseGrid = null;
+
+        const A4_RATIO = 1.4142;
+
+        // --- Initialization ---
+        function init() {
+            entranceAudio = document.createElement('audio');
+            entranceAudio.id = 'entrance-audio-element';
+            document.body.appendChild(entranceAudio);
+
+            renderPalettes();
+            renderWheel(); 
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const levelData = urlParams.get('level');
+            
+            if (levelData) {
+                try {
+                    const parsed = JSON.parse(atob(levelData));
+                    gridCols = parsed.c;
+                    gridRows = parsed.r;
+                    gridData = parsed.d;
+                    document.getElementById('cols').value = gridCols;
+                    document.getElementById('rows').value = gridRows;
+                    renderGrid();
+                    showMessage("Shared Level Loaded Successfully!");
+                } catch (e) {
+                    console.error("Invalid level data in URL", e);
+                    generateGrid();
+                }
+            } else {
+                generateGrid();
+            }
+
+            selectTool('number', 2);
+            
+            document.addEventListener('mouseup', () => isDragging = false);
+            document.addEventListener('touchend', () => isDragging = false);
+        }
+
+        // --- Wheel Modal Setup & Logic ---
+        function renderWheel() {
+            const spinner = document.getElementById('wheel-spinner');
+            spinner.innerHTML = '';
+            let conicString = [];
+            const sliceAngle = 360 / wheelOptions.length;
+
+            wheelOptions.forEach((opt, i) => {
+                const startAngle = i * sliceAngle;
+                const endAngle = (i + 1) * sliceAngle;
+                conicString.push(`${opt.color} ${startAngle}deg ${endAngle}deg`);
+
+                const label = document.createElement('div');
+                label.style.position = 'absolute';
+                label.style.left = '50%';
+                label.style.top = '50%';
+                label.style.width = '50%'; 
+                label.style.height = '20px';
+                label.style.marginTop = '-10px'; 
+                label.style.transformOrigin = 'left center';
+                
+                const sliceCenterAngle = startAngle + (sliceAngle / 2) - 90;
+                label.style.transform = `rotate(${sliceCenterAngle}deg)`;
+                label.style.textAlign = 'right';
+                label.style.paddingRight = '10px';
+                label.style.color = 'white';
+                label.style.fontWeight = 'bold';
+                label.style.fontSize = '12px';
+                label.style.textShadow = '1px 1px 3px rgba(0,0,0,0.9)';
+                label.innerText = opt.name;
+
+                spinner.appendChild(label);
+            });
+
+            spinner.style.background = `conic-gradient(${conicString.join(', ')})`;
+        }
+
+        function openWheelModal(r, c) {
+            wheelTargetCell = (r !== null && c !== null) ? {r, c} : null;
+            document.getElementById('wheel-modal').classList.remove('hidden');
+            document.getElementById('wheel-modal').classList.add('flex');
+        }
+
+        function closeWheelModal() {
+            if (wheelSpinning) return;
+            document.getElementById('wheel-modal').classList.add('hidden');
+            document.getElementById('wheel-modal').classList.remove('flex');
+        }
+
+        function spinWheel() {
+            if (wheelSpinning) return;
+            wheelSpinning = true;
+            
+            const btn = document.getElementById('spin-btn');
+            const closeBtn = document.getElementById('close-wheel-btn');
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            closeBtn.classList.add('opacity-50', 'pointer-events-none');
+
+            const sliceAngle = 360 / wheelOptions.length;
+            const winningIndex = Math.floor(Math.random() * wheelOptions.length);
+            const targetRotation = 360 - (winningIndex * sliceAngle + sliceAngle / 2);
+
+            currentWheelRotation += (360 * 5) + targetRotation - (currentWheelRotation % 360);
+
+            const spinner = document.getElementById('wheel-spinner');
+            spinner.style.transform = `rotate(${currentWheelRotation}deg)`;
+
+            setTimeout(() => {
+                wheelSpinning = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                closeBtn.classList.remove('opacity-50', 'pointer-events-none');
+
+                const reward = wheelOptions[winningIndex];
+
+                if (currentMode === 'play') {
+                    addToBank(reward);
+                    showMessage(`You won: ${reward.name}! Added to bank.`);
+                } else {
+                    showMessage(`Wheel landed on ${reward.name}!`);
+                    if (wheelTargetCell) {
+                        gridData[wheelTargetCell.r][wheelTargetCell.c] = { category: reward.category, value: reward.value };
+                        renderGrid();
+                    }
+                }
+
+                closeWheelModal();
+            }, 4200);
+        }
+
+        // --- Play Timer ---
+        function startPlayTimer() {
+            playTimeSeconds = 600; 
+            updateTimerUI();
+            document.getElementById('play-timer-container').classList.remove('hidden');
+            document.getElementById('play-timer-container').classList.add('flex');
+            
+            if (playTimerInterval) clearInterval(playTimerInterval);
+            
+            playTimerInterval = setInterval(() => {
+                const isGameOver = !document.getElementById('game-over-modal').classList.contains('hidden');
+                const isMrBeast = !document.getElementById('mr-beast-modal').classList.contains('hidden');
+                const isAdBreak = !document.getElementById('ad-modal').classList.contains('hidden');
+                const isWheel = !document.getElementById('wheel-modal').classList.contains('hidden');
+                const isCursedModal = !document.getElementById('curse-modal').classList.contains('hidden');
+                const isDarkRoom = !document.getElementById('dark-room-modal').classList.contains('hidden');
+                
+                if (!isGameOver && !isMrBeast && !isAdBreak && !isWheel && !isCursedModal && !isDarkRoom) {
+                    if (playTimeSeconds > 0) {
+                        playTimeSeconds--;
+                        updateTimerUI();
+                    } else {
+                        clearInterval(playTimerInterval);
+                    }
+                }
+            }, 1000);
+        }
+
+        function stopPlayTimer() {
+            if (playTimerInterval) clearInterval(playTimerInterval);
+            document.getElementById('play-timer-container').classList.add('hidden');
+            document.getElementById('play-timer-container').classList.remove('flex');
+        }
+
+        function updateTimerUI() {
+            const m = Math.floor(playTimeSeconds / 60).toString().padStart(2, '0');
+            const s = (playTimeSeconds % 60).toString().padStart(2, '0');
+            document.getElementById('play-timer-text').innerText = `${m}:${s}`;
+        }
+
+        // --- Item Bank (Play Mode) ---
+        function addToBank(item) {
+            const existing = bankInventory.find(b => b.category === item.category && b.value === item.value);
+            if (existing) {
+                existing.count++;
+            } else {
+                bankInventory.push({ 
+                    name: item.name, 
+                    category: item.category, 
+                    value: item.value, 
+                    count: 1 
+                });
+            }
+            renderBank();
+        }
+
+        function renderBank() {
+            const container = document.getElementById('bank-slots');
+            container.innerHTML = '';
+
+            if (bankInventory.length === 0) {
+                container.innerHTML = `<p class="text-[0.65rem] sm:text-xs text-slate-500 text-center italic mt-4 px-2">Spin wheel<br>to earn items</p>`;
+                return;
+            }
+
+            bankInventory.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.id = `bank-item-${index}`;
+                
+                let colorClass = '';
+                let iconHtml = '';
+                
+                if (item.category === 'number') {
+                    colorClass = getNumberColors(item.value);
+                    let displayVal = item.value;
+                    let textSize = item.value > 100000 ? 'text-[0.45rem]' : (item.value > 1000 ? 'text-xs' : 'text-sm');
+                    iconHtml = `<span class="font-bold ${textSize}">${displayVal}</span>`;
+                } else {
+                    const specData = getSpecialTileData(item.category, item.value);
+                    if (specData) {
+                        colorClass = specData.color;
+                        iconHtml = `<i class="ph ${specData.icon} text-xl"></i>`;
+                    }
+                }
+
+                const badge = `<div class="absolute -top-2 -right-2 bg-rose-600 text-white text-[0.6rem] sm:text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-slate-900 shadow-md z-10">${item.count}</div>`;
+
+                btn.className = `tool-btn w-full aspect-square max-w-[4rem] rounded-xl flex items-center justify-center border-2 shadow p-1 relative ${colorClass}`;
+                btn.innerHTML = iconHtml + badge;
+                btn.onclick = () => selectBankTool(index);
+                container.appendChild(btn);
+            });
+            
+            if (activeTool.bankIndex !== null) {
+                const activeBtn = document.getElementById(`bank-item-${activeTool.bankIndex}`);
+                if (activeBtn) activeBtn.classList.add('ring-4', 'ring-cyan-400', 'scale-110', 'active');
+            }
+        }
+
+        function selectBankTool(index) {
+            const item = bankInventory[index];
+
+            if (instantPlayTools.includes(item.value)) {
+                triggerInstantAction(item.value);
+                item.count--;
+                if (item.count <= 0) {
+                    bankInventory.splice(index, 1);
+                    selectTool('number', 2); 
+                } else {
+                    renderBank();
+                }
+                return;
+            }
+
+            activeTool = { category: item.category, value: item.value, bankIndex: index };
+            
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('ring-4', 'ring-cyan-400', 'scale-110', 'active'));
+            renderBank(); 
+        }
+
+        // --- Instant Actions Logic ---
+        function triggerInstantAction(value) {
+            if (value === 'entrance') playEntranceSong();
+            else if (value === 'ad_break') triggerAdBreak();
+            else if (value === 'remove_ads') toggleRemoveAds();
+            else if (value === 'lucky_wheel') openWheelModal(null, null);
+            else if (value === 'game_over') showGameOver();
+            else if (value === 'danhausen') triggerDanhausenCurse();
+            else if (value === 'dark_room') triggerDarkRoom();
+            else if (value === 'mr_beast') triggerMrBeast();
+            else if (value === 'shuffle') triggerShuffle();
+            else if (value === 'random') triggerRandomTile();
+            else if (value === 'change_layout') showMessage("Layout changed!");
+            else if (value === 'print_layout') showMessage("Printing layout...");
+            else if (value === 'eat_layout') showMessage("Layout eaten! Delicious.");
+            else if (value === 'nominate') showMessage("You have been nominated!");
+            else if (value === 'sneak_peak') showMessage("Sneak peak revealed!");
+        }
+
+        function triggerMrBeast() {
+            document.getElementById('mr-beast-modal').classList.remove('hidden');
+            document.getElementById('mr-beast-modal').classList.add('flex');
+        }
+
+        function closeMrBeast() {
+            document.getElementById('mr-beast-modal').classList.add('hidden');
+            document.getElementById('mr-beast-modal').classList.remove('flex');
+            showMessage("Game restored from Mr. Beast.");
+        }
+
+        function triggerShuffle() {
+            let numberCells = [];
+            let values = [];
+            for (let r = 0; r < gridRows; r++) {
+                for (let c = 0; c < gridCols; c++) {
+                    if (gridData[r][c] && gridData[r][c].category === 'number') {
+                        numberCells.push({r, c});
+                        values.push(gridData[r][c].value);
+                    }
+                }
+            }
+            if (values.length > 1) {
+                // Fisher-Yates shuffle
+                for (let i = values.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [values[i], values[j]] = [values[j], values[i]];
+                }
+                numberCells.forEach((cell, index) => {
+                    gridData[cell.r][cell.c].value = values[index];
+                });
+                renderGrid();
+                showMessage("Board numbers shuffled!");
+            } else {
+                showMessage("Not enough numbers to shuffle!");
+            }
+        }
+
+        async function triggerRandomTile() {
+            let availableCols = [];
+            for(let c=0; c<gridCols; c++) {
+                if(!gridData[0][c]) availableCols.push(c);
+            }
+            
+            if(availableCols.length > 0) {
+                let randomCol = availableCols[Math.floor(Math.random() * availableCols.length)];
+                let randomVal = numberTiles[Math.floor(Math.random() * 6)]; // 2, 4, 8, 16, 32, 64
+                
+                // Preserve bank index so it doesn't try to double-consume during the drop animation
+                const tempBankIndex = activeTool.bankIndex;
+                activeTool.bankIndex = null; 
+                
+                await dropBlock(randomCol, randomVal);
+                
+                activeTool.bankIndex = tempBankIndex;
+                showMessage("A random tile appeared!");
+            } else {
+                showMessage("No space for a random tile!");
+            }
+        }
+
+        function triggerDarkRoom() {
+            document.getElementById('dark-room-modal').classList.remove('hidden');
+            document.getElementById('dark-room-modal').classList.add('flex');
+        }
+
+        function closeDarkRoom() {
+            document.getElementById('dark-room-modal').classList.add('hidden');
+            document.getElementById('dark-room-modal').classList.remove('flex');
+            showMessage("You survived the dark room... game resumed!");
+        }
+
+        function triggerDanhausenCurse() {
+            if (isCursed) return;
+            isCursed = true;
+
+            const curseModal = document.getElementById('curse-modal');
+            curseModal.classList.remove('hidden');
+            curseModal.classList.add('flex');
+
+            preCurseGrid = JSON.parse(JSON.stringify(gridData));
+            
+            for (let r = 0; r < gridRows; r++) {
+                for (let c = 0; c < gridCols; c++) {
+                    if (gridData[r][c] && gridData[r][c].category === 'number') {
+                        gridData[r][c] = { category: 'number', value: 13 };
+                    }
+                }
+            }
+            renderGrid();
+
+            setTimeout(() => {
+                curseModal.classList.add('hidden');
+                curseModal.classList.remove('flex');
+            }, 2000);
+
+            setTimeout(() => {
+                gridData = preCurseGrid;
+                preCurseGrid = null;
+                isCursed = false;
+                renderGrid();
+                showMessage("The curse has lifted...");
+            }, 10000);
+        }
+
+        function submitAudio() {
+            const urlInput = document.getElementById('audio-url').value;
+            const fileInput = document.getElementById('audio-upload').files[0];
+
+            if (fileInput) {
+                const url = URL.createObjectURL(fileInput);
+                entranceAudio.src = url;
+                entranceAudio.load(); 
+                showMessage("Entrance song loaded from file!");
+                document.getElementById('audio-url').value = ''; 
+            } else if (urlInput) {
+                if (urlInput.includes("youtube.com") || urlInput.includes("youtu.be")) {
+                    showMessage("Error: Please use a direct link to an audio file, not a video webpage.");
+                    return;
+                }
+                entranceAudio.src = urlInput;
+                entranceAudio.load(); 
+                showMessage("Entrance song loaded from URL!");
+                document.getElementById('audio-upload').value = '';
+            } else {
+                showMessage("Please provide a URL or upload a file first.");
+            }
+        }
+
+        function playEntranceSong() {
+            if (entranceAudio && entranceAudio.src) {
+                entranceAudio.currentTime = 0;
+                const playPromise = entranceAudio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        showMessage("Playing Entrance Song...");
+                    }).catch(err => {
+                        showMessage("Unable to play audio. Link may be invalid or blocked.");
+                        console.log('Audio play failed:', err);
+                    });
+                }
+            } else {
+                showMessage("No song linked! Please submit a URL or file first.");
+            }
+        }
+
+        function triggerAdBreak() {
+            if (adsRemoved) {
+                showMessage("Ad Skipped! (Remove Ads is enabled)");
+                return;
+            }
+            document.getElementById('ad-modal').classList.remove('hidden');
+            document.getElementById('ad-modal').classList.add('flex');
+            
+            let timeLeft = 30;
+            const timerDisplay = document.getElementById('ad-timer');
+            timerDisplay.innerText = timeLeft;
+            
+            if (adTimerInterval) clearInterval(adTimerInterval);
+            
+            adTimerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(adTimerInterval);
+                    document.getElementById('ad-modal').classList.add('hidden');
+                    document.getElementById('ad-modal').classList.remove('flex');
+                    showMessage("Ad finished. Thanks for waiting!");
+                }
+            }, 1000);
+        }
+
+        function toggleRemoveAds() {
+            adsRemoved = !adsRemoved;
+            showMessage(adsRemoved ? "Ads Disabled!" : "Ads Re-Enabled!");
+            
+            const btn = document.getElementById('tool-secondary-remove_ads');
+            if (btn) {
+                if (adsRemoved) {
+                    btn.classList.add('ring-4', 'ring-emerald-500');
+                    btn.querySelector('span').innerText = "Ads Off";
+                } else {
+                    btn.classList.remove('ring-4', 'ring-emerald-500');
+                    btn.querySelector('span').innerText = "No Ads";
+                }
+            }
+        }
+
+        function showGameOver() {
+            document.getElementById('game-over-modal').classList.remove('hidden');
+            document.getElementById('game-over-modal').classList.add('flex');
+        }
+
+        function closeGameOver() {
+            document.getElementById('game-over-modal').classList.add('hidden');
+            document.getElementById('game-over-modal').classList.remove('flex');
+        }
+
+        // --- Core Functions ---
+        function setMode(mode) {
+            currentMode = mode;
+            
+            const btnBuild = document.getElementById('mode-build');
+            const btnPlay = document.getElementById('mode-play');
+            const toolsSection = document.getElementById('tools-section');
+            const playBank = document.getElementById('play-bank');
+            
+            if (mode === 'build') {
+                stopPlayTimer();
+                isCursed = false;
+                preCurseGrid = null;
+                
+                btnBuild.className = 'flex-1 bg-cyan-600 text-white py-2 rounded-lg font-bold shadow-[inset_0_0_10px_rgba(255,255,255,0.2)] transition-colors';
+                btnPlay.className = 'flex-1 bg-slate-700 text-slate-400 py-2 rounded-lg font-bold hover:bg-slate-600 transition-colors';
+                toolsSection.style.display = 'flex';
+                playBank.classList.add('hidden');
+                playBank.classList.remove('flex');
+                
+                document.getElementById('tool-core-game_over').style.display = 'flex';
+                document.getElementById('tool-core-play_button').style.display = 'flex';
+                
+                if (savedBuildState) {
+                    gridCols = savedBuildState.cols;
+                    gridRows = savedBuildState.rows;
+                    gridData = savedBuildState.data;
+                    document.getElementById('cols').value = gridCols;
+                    document.getElementById('rows').value = gridRows;
+                    savedBuildState = null;
+                }
+                renderGrid();
+            } else {
+                btnPlay.className = 'flex-1 bg-emerald-600 text-white py-2 rounded-lg font-bold shadow-[inset_0_0_10px_rgba(255,255,255,0.2)] transition-colors';
+                btnBuild.className = 'flex-1 bg-slate-700 text-slate-400 py-2 rounded-lg font-bold hover:bg-slate-600 transition-colors';
+                toolsSection.style.display = 'none';
+                playBank.classList.remove('hidden');
+                playBank.classList.add('flex');
+                
+                document.getElementById('tool-core-game_over').style.display = 'none';
+                document.getElementById('tool-core-play_button').style.display = 'none';
+                
+                savedBuildState = {
+                    cols: gridCols,
+                    rows: gridRows,
+                    data: JSON.parse(JSON.stringify(gridData))
+                };
+                
+                gridCols = 5;
+                gridRows = 5;
+                document.getElementById('cols').value = 5;
+                document.getElementById('rows').value = 5;
+                gridData = Array(5).fill(null).map(() => Array(5).fill(null));
+                
+                selectTool('number', 2);
+                moveSelection = null;
+                pendingSwapFirstCell = null;
+                bankInventory = []; 
+                renderBank();
+                renderGrid();
+                
+                startPlayTimer();
+            }
+        }
+
+        function toggleRatioLock() {
+            a4RatioLocked = !a4RatioLocked;
+            const icon = document.getElementById('ratio-lock-icon');
+            if (a4RatioLocked) {
+                icon.className = 'ph ph-lock-key text-xl text-cyan-400';
+                handleDimensionChange('cols'); 
+            } else {
+                icon.className = 'ph ph-lock-key-open text-xl';
+            }
+        }
+
+        function handleDimensionChange(source) {
+            if (!a4RatioLocked) return;
+            let c = parseInt(document.getElementById('cols').value) || 4;
+            let r = parseInt(document.getElementById('rows').value) || 4;
+            
+            if (source === 'cols') {
+                r = Math.round(c * A4_RATIO);
+                document.getElementById('rows').value = r;
+            } else if (source === 'rows') {
+                c = Math.round(r / A4_RATIO);
+                document.getElementById('cols').value = c;
+            }
+        }
+
+        function placeDefaultCoreElements() {
+            if (currentMode === 'play') return; 
+            
+            const r = Math.floor(gridRows / 2);
+            const c = Math.floor(gridCols / 2);
+            
+            gridData[r][c] = { category: 'core', value: 'game_over' };
+            
+            if (r > 0) gridData[r-1][c] = { category: 'core', value: 'play_button' };
+            else gridData[r+1][c] = { category: 'core', value: 'play_button' };
+
+            if (c > 0) gridData[r][c-1] = { category: 'core', value: 'entrance' };
+            else gridData[r][c+1] = { category: 'core', value: 'entrance' };
+
+            if (c < gridCols - 1 && !gridData[r][c+1]) gridData[r][c+1] = { category: 'core', value: 'ad_break' };
+            else if (c > 1 && !gridData[r][c-2]) gridData[r][c-2] = { category: 'core', value: 'ad_break' };
+            else if (r < gridRows - 1 && !gridData[r+1][c]) gridData[r+1][c] = { category: 'core', value: 'ad_break' };
+        }
+
+        function generateGrid() {
+            gridCols = parseInt(document.getElementById('cols').value) || 6;
+            gridRows = parseInt(document.getElementById('rows').value) || 8;
+            
+            if (gridCols < 4) gridCols = 4; if (gridCols > 15) gridCols = 15;
+            if (gridRows < 4) gridRows = 4; if (gridRows > 22) gridRows = 22;
+            
+            document.getElementById('cols').value = gridCols;
+            document.getElementById('rows').value = gridRows;
+
+            gridData = Array(gridRows).fill(null).map(() => Array(gridCols).fill(null));
+            placeDefaultCoreElements();
+            moveSelection = null;
+            pendingSwapFirstCell = null;
+            isCursed = false;
+            preCurseGrid = null;
+            renderGrid();
+        }
+
+        function clearGrid() {
+            const msg = currentMode === 'play' 
+                ? "Are you sure you want to clear the entire grid?" 
+                : "Are you sure you want to clear the entire grid? (Core elements will remain)";
+                
+            if(confirm(msg)) {
+                gridData = Array(gridRows).fill(null).map(() => Array(gridCols).fill(null));
+                placeDefaultCoreElements();
+                moveSelection = null;
+                pendingSwapFirstCell = null;
+                isCursed = false;
+                preCurseGrid = null;
+                renderGrid();
+            }
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            
+            container.style.gridTemplateColumns = `repeat(${gridCols}, minmax(0, 1fr))`;
+            
+            let cellSizeClass = "w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-xl";
+            if (gridCols > 8 || gridRows > 10) cellSizeClass = "w-10 h-10 sm:w-12 sm:h-12 text-sm";
+            if (gridCols > 12) cellSizeClass = "w-8 h-8 sm:w-10 sm:h-10 text-xs";
+
+            for (let r = 0; r < gridRows; r++) {
+                for (let c = 0; c < gridCols; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = `grid-cell rounded-lg cursor-pointer flex items-center justify-center font-bold border-2 transition-colors duration-150 select-none ${cellSizeClass} shadow-inner`;
+                    
+                    const cellData = gridData[r][c];
+                    
+                    if (!cellData) {
+                        cell.classList.add('bg-slate-700', 'border-slate-600', 'hover:bg-slate-600');
+                    } else {
+                        applyCellVisuals(cell, cellData);
+                    }
+
+                    if (moveSelection && moveSelection.r === r && moveSelection.c === c) {
+                        cell.classList.add('ring-4', 'ring-yellow-400', 'scale-90', 'opacity-80', 'z-10');
+                    }
+
+                    if (pendingSwapFirstCell && pendingSwapFirstCell.r === r && pendingSwapFirstCell.c === c) {
+                        cell.classList.add('ring-4', 'ring-rose-500', 'scale-90', 'opacity-80', 'z-10');
+                    }
+
+                    cell.addEventListener('mousedown', (e) => {
+                        e.preventDefault(); 
+                        if (isAnimating) return;
+                        if (activeTool.category === 'move' || currentMode === 'play') {
+                            paintCell(r, c); 
+                        } else {
+                            isDragging = true;
+                            paintCell(r, c);
+                        }
+                    });
+                    
+                    cell.addEventListener('mouseenter', () => {
+                        if (isAnimating) return;
+                        if (isDragging && activeTool.category !== 'move' && currentMode === 'build') paintCell(r, c);
+                    });
+                    
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        if (isAnimating) return;
+                        if (activeTool.category === 'move' || currentMode === 'play') {
+                            paintCell(r, c);
+                        } else {
+                            isDragging = true;
+                            paintCell(r, c);
+                        }
+                    });
+                    
+                    cell.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        if (!isDragging || activeTool.category === 'move' || currentMode === 'play' || isAnimating) return;
+                        const touch = e.touches[0];
+                        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if (target && target.classList.contains('grid-cell')) {
+                            const index = Array.from(container.children).indexOf(target);
+                            if (index !== -1) {
+                                const tr = Math.floor(index / gridCols);
+                                const tc = index % gridCols;
+                                paintCell(tr, tc);
+                            }
+                        }
+                    });
+
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        async function paintCell(r, c) {
+            if (isCursed) {
+                showMessage("You are cursed! You cannot make a move right now.");
+                return;
+            }
+
+            if (currentMode === 'play') {
+                if (isAnimating) return;
+                await executePlayAction(r, c);
+                return;
+            }
+
+            if (activeTool.category === 'move') {
+                if (!moveSelection) {
+                    if (gridData[r][c]) {
+                        moveSelection = {r, c};
+                        renderGrid();
+                    }
+                } else {
+                    if (moveSelection.r === r && moveSelection.c === c) {
+                        moveSelection = null;
+                        renderGrid();
+                        return;
+                    }
+                    const temp = gridData[r][c];
+                    gridData[r][c] = gridData[moveSelection.r][moveSelection.c];
+                    gridData[moveSelection.r][moveSelection.c] = temp;
+                    moveSelection = null;
+                    renderGrid();
+                }
+                return; 
+            }
+
+            const currentCell = gridData[r][c];
+            if (currentCell && currentCell.category === 'core') {
+                const targetType = currentCell.value;
+                let typeCount = 0;
+                for (let i = 0; i < gridRows; i++) {
+                    for (let j = 0; j < gridCols; j++) {
+                        if (gridData[i][j] && gridData[i][j].value === targetType) typeCount++;
+                    }
+                }
+                if (typeCount <= 1 && activeTool.value !== targetType) return;
+            }
+
+            if (activeTool.category === 'eraser') {
+                gridData[r][c] = null;
+            } else {
+                gridData[r][c] = { category: activeTool.category, value: activeTool.value };
+            }
+            renderGrid();
+        }
+
+        // --- Play Mode Action Handlers ---
+        async function executePlayAction(r, c) {
+            const currentCell = gridData[r][c];
+            let actionSuccessful = false;
+
+            if (currentCell && currentCell.value === 'entrance') {
+                playEntranceSong();
+                return;
+            }
+
+            if (currentCell && currentCell.value === 'lucky_wheel') {
+                openWheelModal(r, c);
+                return;
+            }
+
+            if (activeTool.category === 'number') {
+                await dropBlock(c, activeTool.value);
+                return; 
+            }
+
+            if (activeTool.category === 'primary') {
+                if (activeTool.value === 'bomb') {
+                    isAnimating = true;
+                    let destroyed = false;
+                    for (let i = 0; i < gridRows; i++) {
+                        if (gridData[i][c] && gridData[i][c].category === 'core') continue;
+                        if (gridData[i][c]) destroyed = true;
+                        gridData[i][c] = null;
+                    }
+                    if (destroyed) {
+                        renderGrid();
+                        actionSuccessful = true;
+                        consumeActiveBankItem();
+                        await processBoardState();
+                    }
+                    isAnimating = false;
+                } else if (activeTool.value === 'hammer') {
+                    if (currentCell && currentCell.category !== 'core') {
+                        isAnimating = true;
+                        gridData[r][c] = null; 
+                        renderGrid();
+                        actionSuccessful = true;
+                        consumeActiveBankItem();
+                        await processBoardState();
+                        isAnimating = false;
+                    }
+                } else if (activeTool.value === 'swap') {
+                    if (!pendingSwapFirstCell) {
+                        if (currentCell && currentCell.category === 'core') return;
+                        if (!currentCell) return; 
+                        pendingSwapFirstCell = {r, c};
+                        renderGrid();
+                    } else {
+                        if (pendingSwapFirstCell.r === r && pendingSwapFirstCell.c === c) {
+                            pendingSwapFirstCell = null; 
+                            renderGrid();
+                        } else {
+                            if (currentCell && currentCell.category === 'core') return;
+                            isAnimating = true;
+                            const temp = gridData[r][c];
+                            gridData[r][c] = gridData[pendingSwapFirstCell.r][pendingSwapFirstCell.c];
+                            gridData[pendingSwapFirstCell.r][pendingSwapFirstCell.c] = temp;
+                            pendingSwapFirstCell = null;
+                            renderGrid();
+                            actionSuccessful = true;
+                            consumeActiveBankItem();
+                            await processBoardState();
+                            isAnimating = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        function consumeActiveBankItem() {
+            if (activeTool.bankIndex !== null) {
+                let bankItem = bankInventory[activeTool.bankIndex];
+                if (bankItem) {
+                    bankItem.count--;
+                    if (bankItem.count <= 0) {
+                        bankInventory.splice(activeTool.bankIndex, 1);
+                        selectTool('number', 2); 
+                    } else {
+                        renderBank(); 
+                    }
+                }
+            }
+        }
+
+        // --- Gravity & Cascading Merges Engine ---
+        async function dropBlock(c, value) {
+            let targetR = -1;
+            for (let r = gridRows - 1; r >= 0; r--) {
+                if (!gridData[r][c]) {
+                    targetR = r;
+                    break;
+                }
+            }
+            if (targetR === -1) return; // Column is full
+
+            isAnimating = true;
+            consumeActiveBankItem();
+
+            await animateDrop(c, targetR, value);
+
+            gridData[targetR][c] = { category: 'number', value: value };
+            renderGrid();
+
+            await processBoardState();
+
+            isAnimating = false;
+        }
+
+        async function processBoardState() {
+            let boardChanged = true;
+            const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+            while (boardChanged) {
+                boardChanged = false;
+
+                let gravityApplied = applyGravity();
+                if (gravityApplied) {
+                    renderGrid();
+                    await sleep(200);
+                    boardChanged = true;
+                }
+
+                let mergeApplied = checkAllMerges();
+                if (mergeApplied) {
+                    renderGrid();
+                    await sleep(200);
+                    boardChanged = true;
+                }
+            }
+        }
+
+        function applyGravity() {
+            let moved = false;
+            for (let c = 0; c < gridCols; c++) {
+                for (let r = gridRows - 2; r >= 0; r--) {
+                    if (gridData[r][c] && gridData[r][c].category === 'number') {
+                        let bottomR = r;
+                        while (bottomR + 1 < gridRows && !gridData[bottomR + 1][c]) {
+                            bottomR++;
+                        }
+                        if (bottomR !== r) {
+                            gridData[bottomR][c] = gridData[r][c];
+                            gridData[r][c] = null;
+                            moved = true;
+                        }
+                    }
+                }
+            }
+            return moved;
+        }
+
+        function checkAllMerges() {
+            for (let r = gridRows - 1; r >= 0; r--) {
+                for (let c = 0; c < gridCols; c++) {
+                    let cell = gridData[r][c];
+                    if (!cell || cell.category !== 'number') continue;
+
+                    if (r + 1 < gridRows) {
+                        let target = gridData[r+1][c];
+                        if (target && target.category === 'number' && target.value === cell.value) {
+                            doMerge(r, c, r+1, c);
+                            return true;
+                        }
+                    }
+                    if (c - 1 >= 0) {
+                        let target = gridData[r][c-1];
+                        if (target && target.category === 'number' && target.value === cell.value) {
+                            doMerge(r, c, r, c-1);
+                            return true;
+                        }
+                    }
+                    if (c + 1 < gridCols) {
+                        let target = gridData[r][c+1];
+                        if (target && target.category === 'number' && target.value === cell.value) {
+                            doMerge(r, c, r, c+1);
+                            return true;
+                        }
+                    }
+                    if (r - 1 >= 0) {
+                        let target = gridData[r-1][c];
+                        if (target && target.category === 'number' && target.value === cell.value) {
+                            doMerge(r-1, c, r, c); 
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function doMerge(r1, c1, r2, c2) {
+            const val = gridData[r1][c1].value;
+            const currentIndex = numberTiles.indexOf(val);
+            let nextVal = val;
+            if (currentIndex !== -1 && currentIndex < numberTiles.length - 1) {
+                nextVal = numberTiles[currentIndex + 1];
+            }
+            
+            gridData[r2][c2] = { category: 'number', value: nextVal };
+            gridData[r1][c1] = null;
+        }
+
+        async function animateDrop(c, endR, value) {
+            return new Promise(resolve => {
+                const container = document.getElementById('grid-container');
+                container.style.position = 'relative';
+
+                const targetCellIndex = endR * gridCols + c;
+                const topCellIndex = c;
+                const targetCell = container.children[targetCellIndex];
+                const topCell = container.children[topCellIndex];
+
+                if(!targetCell || !topCell) { resolve(); return; }
+
+                const targetRect = targetCell.getBoundingClientRect();
+                const topRect = topCell.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+
+                const tempEl = document.createElement('div');
+                let baseClasses = targetCell.className.split(' ').filter(cls =>
+                    !cls.includes('bg-slate-700') && !cls.includes('border-slate-600') && !cls.includes('hover:')
+                ).join(' ');
+
+                tempEl.className = baseClasses + ' ' + getNumberColors(value) + ' absolute z-[100] shadow-2xl';
+
+                if(value >= 1000000) tempEl.innerHTML = `<span class="text-[0.45em]">${value}</span>`;
+                else if(value >= 100000) tempEl.innerHTML = `<span class="text-[0.55em]">${value}</span>`;
+                else if(value > 1000) tempEl.innerHTML = `<span class="text-[0.65em]">${value}</span>`;
+                else tempEl.innerHTML = `<span>${value}</span>`;
+
+                const x = topRect.left - containerRect.left;
+                const startY = -targetRect.height - 10; 
+                const endY = targetRect.top - containerRect.top;
+
+                tempEl.style.width = targetRect.width + 'px';
+                tempEl.style.height = targetRect.height + 'px';
+                tempEl.style.left = x + 'px';
+                tempEl.style.top = startY + 'px';
+                tempEl.style.transition = 'top 0.4s cubic-bezier(0.5, 0, 0.75, 0)';
+
+                container.appendChild(tempEl);
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        tempEl.style.top = endY + 'px';
+                    });
+                });
+
+                setTimeout(() => {
+                    tempEl.remove();
+                    resolve();
+                }, 400); 
+            });
+        }
+
+        // --- Visual Mapping ---
+        function getNumberColors(val) {
+            if (val === 13) return 'bg-zinc-950 text-red-600 border-red-900 shadow-[inset_0_0_10px_rgba(220,38,38,0.8)]';
+
+            const colors = {
+                2: 'bg-[#eee4da] text-[#776e65] border-[#dacaba]',
+                4: 'bg-[#ede0c8] text-[#776e65] border-[#e0cba8]',
+                8: 'bg-[#f2b179] text-white border-[#e6985b]',
+                16: 'bg-[#f59563] text-white border-[#df7a47]',
+                32: 'bg-[#f67c5f] text-white border-[#de6042]',
+                64: 'bg-[#f65e3b] text-white border-[#df4320]',
+                128: 'bg-[#edcf72] text-white border-[#ddbd53]',
+                256: 'bg-[#edcc61] text-white border-[#ddb945]',
+                512: 'bg-[#edc850] text-white border-[#dcb638]',
+                1024: 'bg-[#edc53f] text-white border-[#dcb028]',
+                2048: 'bg-[#edc22e] text-white border-[#d9ab18]',
+                4096: 'bg-[#3c3a32] text-[#f9f6f2] border-[#201f1b]',
+                8192: 'bg-[#3c3a32] text-[#f9f6f2] border-[#201f1b]',
+                16384: 'bg-[#3c3a32] text-[#f9f6f2] border-[#201f1b]',
+                32768: 'bg-[#3c3a32] text-[#f9f6f2] border-[#201f1b]',
+                65536: 'bg-[#3c3a32] text-[#f9f6f2] border-[#201f1b]',
+                131072: 'bg-indigo-600 text-white border-indigo-800',
+                262144: 'bg-indigo-700 text-white border-indigo-900',
+                524288: 'bg-violet-600 text-white border-violet-800',
+                1048576: 'bg-violet-700 text-white border-violet-900',
+                2097152: 'bg-purple-600 text-white border-purple-800',
+                4194304: 'bg-purple-700 text-white border-purple-900',
+                8388608: 'bg-fuchsia-600 text-white border-fuchsia-800',
+                16777216: 'bg-fuchsia-700 text-white border-fuchsia-900'
+            };
+            return colors[val] || 'bg-gray-800 text-white border-gray-900';
+        }
+
+        function getSpecialTileData(category, id) {
+            if (category === 'core') return coreTiles.find(t => t.id === id);
+            if (category === 'primary') return primaryTiles.find(t => t.id === id);
+            if (category === 'secondary') return secondaryTiles.find(t => t.id === id);
+            if (category === 'tertiary') return tertiaryTiles.find(t => t.id === id);
+            if (category === 'extra') return extraTiles.find(t => t.id === id);
+            return null;
+        }
+
+        function applyCellVisuals(element, data) {
+            if (data.category === 'number') {
+                element.className += ' ' + getNumberColors(data.value);
+                if(data.value >= 1000000) {
+                    element.innerHTML = `<span class="text-[0.45em]">${data.value}</span>`;
+                } else if(data.value >= 100000) {
+                    element.innerHTML = `<span class="text-[0.55em]">${data.value}</span>`;
+                } else if(data.value > 1000) {
+                    element.innerHTML = `<span class="text-[0.65em]">${data.value}</span>`;
+                } else {
+                    element.innerHTML = `<span>${data.value}</span>`;
+                }
+            } else {
+                const specData = getSpecialTileData(data.category, data.value);
+                if (specData) {
+                    element.className += ' ' + specData.color;
+                    element.innerHTML = `<i class="ph ${specData.icon} text-2xl"></i>`;
+                }
+            }
+        }
+
+        // --- Palettes & Tools ---
+        function selectTool(category, value) {
+            if (currentMode === 'play') {
+                if (instantPlayTools.includes(value)) {
+                    triggerInstantAction(value);
+                    return; 
+                }
+                
+                if (category === 'primary') {
+                    const specData = getSpecialTileData(category, value);
+                    if (specData) {
+                        addToBank({ name: specData.name, category: category, value: value });
+                        showMessage(`${specData.name} added to bank!`);
+                    }
+                    return; 
+                }
+            }
+
+            activeTool = { category, value, bankIndex: null };
+            
+            if (category !== 'move') {
+                moveSelection = null;
+                pendingSwapFirstCell = null;
+                if (gridData.length > 0) renderGrid();
+            }
+
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('ring-4', 'ring-cyan-400', 'scale-110', 'active');
+            });
+            
+            if (currentMode === 'play') renderBank(); 
+
+            const btnId = category === 'eraser' || category === 'move' ? `tool-${category}` : `tool-${category}-${value}`;
+            const activeBtn = document.getElementById(btnId);
+            if(activeBtn) {
+                activeBtn.classList.add('ring-4', 'ring-cyan-400', 'scale-110', 'active');
+            }
+        }
+
+        function renderPalettes() {
+            const numContainer = document.getElementById('palette-numbers');
+            numberTiles.forEach(num => {
+                const btn = document.createElement('button');
+                btn.id = `tool-number-${num}`;
+                btn.className = `tool-btn aspect-square rounded-xl font-bold text-sm sm:text-base border-2 shadow flex items-center justify-center ${getNumberColors(num)}`;
+                
+                if(num >= 1000000) btn.innerHTML = `<span class="text-[0.45em] sm:text-[0.5em]">${num}</span>`;
+                else if(num >= 100000) btn.innerHTML = `<span class="text-[0.55em] sm:text-[0.6em]">${num}</span>`;
+                else if(num > 1000) btn.innerHTML = `<span class="text-xs sm:text-sm">${num}</span>`;
+                else btn.textContent = num;
+
+                btn.onclick = () => selectTool('number', num);
+                numContainer.appendChild(btn);
+            });
+
+            const renderSpecial = (items, containerId, category) => {
+                const container = document.getElementById(containerId);
+                items.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.id = `tool-${category}-${item.id}`;
+                    btn.className = `tool-btn aspect-square rounded-xl flex flex-col items-center justify-center gap-1 border-2 shadow p-1 ${item.color}`;
+                    btn.innerHTML = `
+                        <i class="ph ${item.icon} text-xl lg:text-2xl"></i>
+                        <span class="text-[0.55rem] lg:text-[0.6rem] font-bold leading-tight uppercase text-center">${item.name}</span>
+                    `;
+                    btn.onclick = () => selectTool(category, item.id);
+                    container.appendChild(btn);
+                });
+            }
+
+            renderSpecial(coreTiles, 'palette-core', 'core');
+            renderSpecial(primaryTiles, 'palette-primary', 'primary');
+            renderSpecial(secondaryTiles, 'palette-secondary', 'secondary');
+            renderSpecial(tertiaryTiles, 'palette-tertiary', 'tertiary');
+            renderSpecial(extraTiles, 'palette-extra', 'extra');
+        }
+
+        // --- Export Feature ---
+        let toastTimeout;
+        function showMessage(msg) {
+            const el = document.getElementById('toast-message');
+            const text = document.getElementById('toast-text');
+            text.textContent = msg;
+            
+            el.classList.remove('opacity-0', 'translate-y-[-20px]');
+            el.classList.add('opacity-100', 'translate-y-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                el.classList.remove('opacity-100', 'translate-y-0');
+                el.classList.add('opacity-0', 'translate-y-[-20px]');
+            }, 3000);
+        }
+
+        function exportImage() {
+            const captureArea = document.getElementById('capture-area');
+            
+            const tempSel = moveSelection;
+            const tempSwap = pendingSwapFirstCell;
+            moveSelection = null;
+            pendingSwapFirstCell = null;
+            renderGrid();
+
+            showMessage("Generating image...");
+
+            html2canvas(captureArea, {
+                backgroundColor: '#0f172a',
+                scale: 2 
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                document.getElementById('exported-image').src = imgData;
+                
+                document.getElementById('image-modal').classList.remove('hidden');
+                document.getElementById('image-modal').classList.add('flex');
+                showMessage("Image ready to save!");
+                
+                moveSelection = tempSel;
+                pendingSwapFirstCell = tempSwap;
+                renderGrid();
+            }).catch(err => {
+                showMessage("Failed to generate image.");
+                console.error(err);
+            });
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').classList.remove('flex');
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+
+        function copyShareLink() {
+            const minimalData = { c: gridCols, r: gridRows, d: gridData };
+            const encoded = btoa(JSON.stringify(minimalData));
+            const url = window.location.origin + window.location.pathname + '?level=' + encoded;
+            
+            navigator.clipboard.writeText(url).then(() => {
+                showMessage("Share Link copied to clipboard!");
+            }).catch(() => {
+                const box = document.getElementById('fallback-box');
+                box.value = url;
+                box.classList.remove('hidden');
+                box.select();
+                document.execCommand('copy');
+                showMessage("Share link generated in text box below.");
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
+
+
